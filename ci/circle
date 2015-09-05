@@ -1,0 +1,47 @@
+#!/usr/bin/env python2.7
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+import os
+import sys
+from math import ceil
+from subprocess import call
+
+
+NUM_WORKERS = 4
+TARGETS = [
+    'itest_lucid',
+    'itest_precise',
+    'itest_trusty',
+    'itest_wheezy',
+    'itest_jessie',
+    'itest_stretch',
+]
+TARGETS_PER_WORKER = int(ceil(len(TARGETS) / NUM_WORKERS))
+
+if __name__ == '__main__':
+    node_index = int(os.environ['CIRCLE_NODE_INDEX'])
+
+    if node_index >= NUM_WORKERS:
+        print('Error: CIRCLE_NODE_INDEX={} but should be < NUM_WORKERS={}'.format(
+            node_index,
+            NUM_WORKERS,
+        ))
+        sys.exit(1)
+
+    my_targets = TARGETS[node_index::NUM_WORKERS]
+    status = 0
+
+    for target in my_targets:
+        print('Executing target {}...'.format(target))
+        target_status = call(('make', target))
+
+        if target_status != 0:
+            status = target_status
+            print('Error! Target {} failed with exit status {}'.format(
+                target,
+                target_status,
+            ))
+
+    sys.exit(status)
