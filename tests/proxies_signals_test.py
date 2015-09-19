@@ -2,24 +2,45 @@ import os
 import re
 import signal
 import sys
+from contextlib import contextmanager
 from subprocess import PIPE
 from subprocess import Popen
 
-from tests.lib.testing import CATCHABLE_SIGNALS
-from tests.lib.testing import pid_tree
+from tests.lib.testing import REGULAR_SIGNALS
 
 
-def test_prints_signals(both_debug_modes, both_setsid_modes):
+@contextmanager
+def spawn_print_signals():
     proc = Popen(
         ('dumb-init', sys.executable, '-m', 'tests.lib.print_signals'),
         stdout=PIPE,
     )
 
-    assert re.match(b'^ready \(pid: (?:[0-9]+)\)\n$', proc.stdout.readline())
+    match = re.match(b'^ready \(pid: ([0-9]+)\)\n$', proc.stdout.readline())
+    pid = int(match.group(1))
+    yield proc
+    proc.kill()
+    os.kill(pid, signal.SIGKILL)
 
-    for signum in CATCHABLE_SIGNALS:
+
+def assert_receives_signals(proc):
+    for signum in REGULAR_SIGNALS:
         proc.send_signal(signum)
         assert proc.stdout.readline() == '{0}\n'.format(signum).encode('ascii')
 
-    for pid in pid_tree(proc.pid):
-        os.kill(pid, signal.SIGKILL)
+
+def test_proxies_signals(both_debug_modes, both_setsid_modes):
+    with spawn_print_signals() as proc:
+        assert_receives_signals(proc)
+
+
+def test_proxies_signals_with_suspend(both_debug_modes, both_setsid_modes):
+    with spawn_print_signals() as proc:
+        assert_receives_signals(proc)
+
+        proc.send_signal(signal.SIGTSTP)
+        proc.send_signal(signal.SIGCONT)
+#        assert proc.stdout.readline() == b'20\n'
+#        assert proc.stdout.readline() == b'18\n'
+
+#        assert_receives_signals(proc)

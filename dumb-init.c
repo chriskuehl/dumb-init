@@ -155,6 +155,22 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    /* establish dumb-init as a session leader if setsid mode is enabled */
+    if (use_setsid) {
+        printf("current sid: %d\n", getsid(0));
+        pid_t result = setsid();
+        if (result == -1) {
+            fprintf(
+                stderr,
+                "Unable to setsid (errno=%d %s). Exiting.\n",
+                errno,
+                strerror(errno)
+            );
+            exit(1);
+        }
+        DEBUG("setsid complete.\n");
+    }
+
     /* launch our process */
     child_pid = fork();
 
@@ -165,19 +181,18 @@ int main(int argc, char *argv[]) {
 
     if (child_pid == 0) {
         if (use_setsid) {
-            pid_t result = setsid();
-            if (result == -1) {
+            /* establish the child as the root of a process group */
+            int result = setpgid(0, 0);
+            if (result != 0) {
                 fprintf(
                     stderr,
-                    "Unable to setsid (errno=%d %s). Exiting.\n",
+                    "Unable to setpgid (errno=%d %s). Exiting.\n",
                     errno,
                     strerror(errno)
                 );
                 exit(1);
             }
-            DEBUG("setsid complete.\n");
         }
-
         execvp(argv[1], &argv[1]);
     } else {
         pid_t killed_pid;

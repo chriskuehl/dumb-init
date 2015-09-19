@@ -7,6 +7,8 @@ CATCHABLE_SIGNALS = frozenset(
     set(range(1, 32)) - set([signal.SIGKILL, signal.SIGSTOP, signal.SIGCHLD])
 )
 
+REGULAR_SIGNALS = CATCHABLE_SIGNALS - set([signal.SIGTSTP])
+
 
 def child_pids(pid):
     """Return a list of direct child PIDs for the given PID."""
