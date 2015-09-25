@@ -41,6 +41,15 @@ void forward_signal(int signum) {
 void handle_signal(int signum) {
     DEBUG("Received signal %d.\n", signum);
     forward_signal(signum);
+
+    if (
+        signum == SIGTSTP ||
+        signum == SIGTTOU ||
+        signum == SIGTTIN
+    ) {
+        DEBUG("Suspending due to TTY signal.\n");
+        kill(getpid(), SIGSTOP);
+    }
 }
 
 
