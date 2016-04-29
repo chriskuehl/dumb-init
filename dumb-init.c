@@ -87,6 +87,11 @@ void handle_signal(int signum) {
         if (use_setsid) {
             DEBUG("Running in setsid mode, so forwarding SIGSTOP instead.\n");
             forward_signal(SIGSTOP);
+
+            if (child_pid > 0) {
+                // wait for child to suspend before we suspend ourselves
+                waitpid(child_pid, NULL, WUNTRACED);
+            }
         } else {
             DEBUG("Not running in setsid mode, so forwarding the original signal (%d).\n", signum);
             forward_signal(signum);

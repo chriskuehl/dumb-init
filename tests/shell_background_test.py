@@ -1,7 +1,6 @@
 import os
 import re
 import sys
-import time
 from signal import SIGCONT
 from signal import SIGKILL
 from subprocess import PIPE
@@ -31,17 +30,9 @@ def test_shell_background_support_setsid(both_debug_modes, setsid_enabled):
         # both should now suspend
         proc.send_signal(signum)
 
-        for _ in range(1000):
-            time.sleep(0.001)
-            try:
-                assert process_state(proc.pid) == 'stopped'
-                assert process_state(pid) == 'stopped'
-            except AssertionError:
-                pass
-            else:
-                break
-        else:
-            raise RuntimeError('Timed out waiting for processes to stop.')
+        os.waitpid(proc.pid, os.WUNTRACED)
+        assert process_state(proc.pid) == 'stopped'
+        assert process_state(pid) == 'stopped'
 
         # and then both wake up again
         proc.send_signal(SIGCONT)
