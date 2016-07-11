@@ -31,6 +31,9 @@ def log(line, color=''):
 
 
 if __name__ == '__main__':
+    call(('docker', 'info'))
+    call(('docker', '--version'))
+    1/0
     num_workers = int(os.environ['CIRCLE_NODE_TOTAL'])
     node_index = int(os.environ['CIRCLE_NODE_INDEX'])
     assert node_index < num_workers
